@@ -1,0 +1,811 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="两轮车管梁车架管径与壁厚变化的截面性能对比工具（圆管 / 矩形闭口管）">
+<title>管梁车架 · 管径 × 壁厚 截面性能对比</title>
+<style>
+:root{
+  --bg:#edf1f5;
+  --surface:#ffffff;
+  --ink:#18232e;
+  --muted:#5a6a78;
+  --line:#d9e1e9;
+  --grid:#e6ecf1;
+  --teal:#0d7a70;
+  --teal-soft:#e2f1ee;
+  --amber:#b45f0b;
+  --amber-soft:#fcf0df;
+  --rose:#a63a55;
+  --rose-soft:#fbe7ec;
+  --green:#2e7d46;
+  --green-soft:#e6f3ea;
+  --header:#152430;
+  --header-ink:#f2f6f9;
+  --shadow:0 1px 2px rgba(21,36,48,.05), 0 10px 28px rgba(21,36,48,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font-family:"Segoe UI","PingFang SC","Microsoft YaHei","Noto Sans SC",sans-serif;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:22px 20px 10px}
+.site-header{background:var(--header);color:var(--header-ink);border-bottom:3px solid var(--teal)}
+.site-header .inner{max-width:1180px;margin:0 auto;padding:26px 20px 22px}
+.site-header h1{margin:0 0 6px;font-size:26px;font-weight:500;letter-spacing:0}
+.site-header .sub{margin:0;color:#b9c7d2;font-size:13px;max-width:880px}
+.conclusion{max-width:1180px;margin:0 auto;padding:14px 20px 16px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;background:var(--surface);border-bottom:1px solid var(--line)}
+.conclusion-title{grid-column:1 / -1;margin:0 0 2px;color:var(--ink);font-size:13px;font-weight:600}
+.chip{display:flex;gap:10px;align-items:flex-start;font-size:13px;padding:12px 14px;border:1px solid var(--line);border-radius:9px;background:#fbfcfd}
+.chip.diameter{border-left:4px solid var(--teal);background:var(--teal-soft)}
+.chip.thickness{border-left:4px solid var(--amber);background:var(--amber-soft)}
+.chip .ch-key{color:var(--ink);white-space:nowrap;font-weight:600}
+.chip .ch-val{font-weight:400}
+.chip .sw{flex:none;width:8px;height:8px;border-radius:50%;margin-top:5px}
+.sw.good{background:var(--green)}.sw.bad{background:var(--rose)}.sw.warn{background:var(--amber)}
+section.block{margin-top:36px}
+h2.sec{font-size:18px;font-weight:500;margin:0 0 8px;display:flex;align-items:center;gap:9px;letter-spacing:0}
+h2.sec::before{content:"";width:4px;height:16px;background:var(--teal);border-radius:2px}
+.lead{font-size:13px;color:var(--muted);margin:0 0 16px;max-width:930px}
+.sim-grid{display:grid;grid-template-columns:minmax(0,1.4fr) minmax(0,1fr);gap:18px;align-items:start}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;box-shadow:var(--shadow)}
+.panel-title{font-size:14px;font-weight:500;margin:0 0 10px;color:var(--ink)}
+.diagram{width:100%}
+.diagram svg,#chartWrap svg{display:block;width:100%;height:auto;background:#fbfdfe;border:1px solid var(--line);border-radius:8px}
+.legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12px;color:var(--muted)}
+.legend .lg{display:inline-flex;align-items:center;gap:6px}
+.swatch{width:14px;height:4px;border-radius:2px;flex:none}
+.swatch.teal{background:var(--teal)}
+.swatch.amber{background:var(--amber)}
+.swatch.rose{background:var(--rose)}
+.swatch.gray{background:#6b7d8c}
+.swatch.dash{width:14px;height:0;border-top:2px dashed #9aa8b4;background:transparent}
+.swatch.solid{width:14px;border-top:2px solid var(--teal);height:0}
+.swatch.wdash{width:14px;height:0;border-top:2px dashed var(--amber);background:transparent}
+.swatch.rose-dash{width:14px;height:0;border-top:2px dashed var(--rose);background:transparent}
+
+.type-tabs,.chart-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+.tab{font:inherit;font-size:13px;font-weight:500;padding:7px 12px;border:1px solid var(--line);border-radius:6px;background:#f7fafb;color:var(--muted);cursor:pointer}
+.tab:hover{border-color:#c3d2dc}
+.tab.active{border-color:var(--teal);background:var(--teal-soft);color:var(--teal)}
+.ctrl{margin-bottom:14px}
+.ctrl-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;margin-bottom:4px}
+.ctrl-head label{font-size:13px;font-weight:500}
+.ctrl-head output{font-size:15px;font-weight:600;color:var(--teal);font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--teal);height:22px;margin:0;cursor:pointer}
+.ctrl-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:1px;font-variant-numeric:tabular-nums}
+.btn-row{display:flex;align-items:center;gap:10px;margin:4px 0 14px}
+.btn{display:inline-flex;align-items:center;gap:7px;border:1px solid var(--teal);background:var(--teal-soft);color:var(--teal);font:inherit;font-size:13px;font-weight:500;padding:8px 14px;border-radius:6px;cursor:pointer}
+.btn:hover{background:#d3ebe7}
+.btn.alt{border-color:var(--line);background:#fff;color:var(--muted)}
+.btn.alt:hover{background:#f3f7f9}
+.btn:disabled{opacity:.55;cursor:not-allowed}
+.btn .icon{font-size:11px;line-height:1}
+.btn-hint{font-size:12px;color:var(--muted)}
+.metrics{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.metric{background:#f7fafb;border:1px solid var(--line);border-radius:8px;padding:10px 12px;min-width:0}
+.metric .k{font-size:12px;color:var(--muted);white-space:nowrap}
+.metric .v{font-size:20px;font-weight:600;margin-top:2px;letter-spacing:0;font-variant-numeric:tabular-nums}
+.metric.accent .v{color:var(--teal)}
+.metric .d{font-size:11px;color:var(--muted);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+#chartReadout{margin:0 0 12px;font-size:13px;color:var(--ink);background:var(--teal-soft);border:1px solid #cfe6e1;border-radius:6px;padding:9px 12px;min-height:20px}
+#chartWrap{width:100%;position:relative}
+.chart-toolbar{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+.chart-toolbar .chart-tabs{margin:0 0 12px}
+
+.table-tools{display:flex;justify-content:space-between;align-items:flex-end;gap:14px;flex-wrap:wrap;margin-bottom:12px}
+.table-tools .type-tabs{margin:0}
+.baseline-control{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.baseline-control label{font-size:13px;font-weight:500}
+.baseline-control select{font:inherit;font-size:12px;max-width:265px;padding:8px 9px;color:var(--ink);background:#fff;border:1px solid var(--line);border-radius:6px}
+.table-actions{display:flex;gap:8px;flex-wrap:wrap}
+.table-scroll{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:8px;box-shadow:var(--shadow)}
+.cmp-table{width:100%;border-collapse:collapse;min-width:1060px}
+.cmp-table caption{position:absolute;overflow:hidden;width:1px;height:1px;clip:rect(0 0 0 0)}
+.cmp-table th,.cmp-table td{padding:9px 11px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle;font-size:12px}
+.cmp-table thead th{background:#f3f7f9;font-weight:500;font-size:11px;color:var(--muted);white-space:nowrap}
+.cmp-table thead th .u{display:block;font-weight:400;font-size:10px;color:#8a9aa6}
+.cmp-table tbody tr:last-child td{border-bottom:none}
+.cmp-table tbody tr.invalid td{background:var(--rose-soft)}
+.cmp-table tbody tr.baseline td{background:#eaf5f2}
+.cmp-table tbody tr.baseline td:first-child{box-shadow:inset 3px 0 0 var(--teal)}
+.cmp-table .num{text-align:right;font-variant-numeric:tabular-nums;font-weight:500;white-space:nowrap}
+.cmp-table .value{font-weight:600}
+.cmp-table .ratio{color:var(--teal);font-weight:600}
+.cmp-table input{width:60px;padding:6px 5px;color:var(--ink);font:inherit;font-size:12px;border:1px solid var(--line);border-radius:5px;background:#fff}
+.cmp-table input:focus{outline:1px solid var(--teal);border-color:var(--teal)}
+.cmp-table input.note-input{width:136px}
+.cmp-table input.invalid-input{border-color:var(--rose);background:#fff6f5}
+.type-cell{font-weight:600;white-space:nowrap}
+.delete{width:27px;height:27px;padding:0;color:var(--rose);font-size:17px;line-height:1;border:1px solid #e9cbd3;background:var(--rose-soft);border-radius:6px;cursor:pointer}
+.delete:hover{background:var(--rose);color:#fff;border-color:var(--rose)}
+.status{min-height:20px;margin:10px 0 0;color:var(--rose);font-size:12px}
+.status:empty{display:none}
+
+.formula-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.fbox{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;box-shadow:var(--shadow)}
+.fbox .tag{display:inline-block;font-size:11px;color:var(--teal);background:var(--teal-soft);border-radius:4px;padding:2px 8px;font-weight:500}
+.fbox .math{margin-top:10px;font-size:16px;font-weight:500;font-family:"Cambria Math","Times New Roman",serif;letter-spacing:0}
+.fbox .note{margin:8px 0 0;font-size:12px;color:var(--muted)}
+.notes-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+.note-item{display:flex;gap:12px;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:14px;box-shadow:var(--shadow)}
+.note-item .nid{flex:none;width:24px;height:24px;border-radius:50%;background:var(--teal-soft);color:var(--teal);font-size:12px;font-weight:500;display:flex;align-items:center;justify-content:center}
+.note-item p{font-size:13px;margin:0}
+.note-item p strong{font-weight:500}
+.site-footer{margin-top:40px;padding:18px 20px;border-top:1px solid var(--line);color:var(--muted);font-size:12px}
+.site-footer .inner{max-width:1180px;margin:0 auto}
+
+@media (max-width:920px){.sim-grid{grid-template-columns:1fr}.formula-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:760px){.conclusion,.notes-grid{grid-template-columns:1fr}.wrap{padding-left:14px;padding-right:14px}.site-header .inner{padding-left:14px;padding-right:14px}}
+@media (max-width:560px){.formula-grid{grid-template-columns:1fr}.site-header h1{font-size:22px}.metrics{grid-template-columns:1fr 1fr}.metric .v{font-size:17px}}
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="inner">
+    <h1>管梁车架 · 管径 × 壁厚 截面性能对比</h1>
+    <p class="sub">面向两轮车管梁车架的早期方案推演：把“更粗”与“更厚”的直觉，转化为质量、抗弯惯性矩、截面模量与比刚度的实时截面数据。</p>
+  </div>
+</header>
+
+<div class="conclusion">
+  <p class="conclusion-title">对比结论：在材料、跨度与载荷路径一致的前提下，外尺寸与壁厚对截面性能的作用并不等效</p>
+  <div class="chip diameter"><span class="sw" style="background:var(--teal)"></span><span><span class="ch-key">1．优先增加外径 D</span><br><span class="ch-val">材料被布置得离中性轴更远，惯性矩 I 近似按 D³～D⁴ 快速增长；同等增重下通常能获得更高的抗弯刚度与比刚度。</span></span></div>
+  <div class="chip thickness"><span class="sw" style="background:var(--amber)"></span><span><span class="ch-key">2．壁厚 t 服务局部强度</span><br><span class="ch-val">增大壁厚可提升截面积、抗凹陷与焊接余量，但对比刚度的提升有限；更适合连接节点、高应力区与制造工艺需要。</span></span></div>
+</div>
+
+<main class="wrap">
+  <section class="block">
+    <h2 class="sec">交互演示</h2>
+    <p class="lead">拖动尺寸滑杆观察截面与指标实时变化。圆管按各向相同的弯曲惯性矩计算；矩形管按竖向高度 H 受弯的强轴惯性矩 Iₓ 计算。</p>
+    <div class="sim-grid">
+      <div class="panel">
+        <p class="panel-title">管梁截面几何示意</p>
+        <div class="diagram" id="sectionDiagram"></div>
+        <div class="legend">
+          <span class="lg"><span class="swatch teal"></span>钢管截面材料</span>
+          <span class="lg"><span class="swatch gray"></span>中性轴 / 强轴 x-x</span>
+          <span class="lg"><span class="swatch amber"></span>尺寸与壁厚标注</span>
+        </div>
+      </div>
+      <div class="panel">
+        <p class="panel-title">参数与截面指标</p>
+        <div class="type-tabs" role="tablist" aria-label="截面类型">
+          <button class="tab active" id="roundMode" type="button" role="tab" aria-selected="true">圆管</button>
+          <button class="tab" id="rectMode" type="button" role="tab" aria-selected="false">矩形闭口管</button>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="outerRange" id="outerLabel">外径 D</label><output id="outerVal">28.6 mm</output></div>
+          <input id="outerRange" type="range" min="20" max="50" step="0.1" value="28.6">
+          <div class="ctrl-scale" id="outerScale"><span>20 mm</span><span>35 mm</span><span>50 mm</span></div>
+        </div>
+        <div class="ctrl" id="heightCtrl" hidden>
+          <div class="ctrl-head"><label for="heightRange">高度 H</label><output id="heightVal">25 mm</output></div>
+          <input id="heightRange" type="range" min="15" max="55" step="0.1" value="25">
+          <div class="ctrl-scale"><span>15 mm</span><span>35 mm</span><span>55 mm</span></div>
+        </div>
+        <div class="ctrl">
+          <div class="ctrl-head"><label for="thicknessRange">壁厚 t</label><output id="thicknessVal">1.5 mm</output></div>
+          <input id="thicknessRange" type="range" min="0.6" max="5" step="0.1" value="1.5">
+          <div class="ctrl-scale"><span>0.6 mm</span><span>2.8 mm</span><span>5.0 mm</span></div>
+        </div>
+        <div class="btn-row">
+          <button type="button" class="btn" id="playBtn"><span class="icon" id="playIcon">▶</span><span id="playLabel">演示尺寸变化</span></button>
+          <span class="btn-hint">连续观察尺寸收益</span>
+        </div>
+        <div class="metrics">
+          <div class="metric accent"><div class="k">截面积 A</div><div class="v" id="mArea">—</div><div class="d">决定材料用量</div></div>
+          <div class="metric"><div class="k">单位质量</div><div class="v" id="mKgm">—</div><div class="d">A × 7.85 / 1000</div></div>
+          <div class="metric accent"><div class="k" id="kInertia">惯性矩 I</div><div class="v" id="mInertia">—</div><div class="d" id="mInertiaD">各弯曲方向相同</div></div>
+          <div class="metric"><div class="k" id="kModulus">截面模量 W</div><div class="v" id="mModulus">—</div><div class="d" id="mModulusD">σ = M / W</div></div>
+          <div class="metric accent"><div class="k">比刚度</div><div class="v" id="mSpecific">—</div><div class="d">I ÷ kg/m（抗弯效率）</div></div>
+          <div class="metric"><div class="k">相对 Ø28.6×1.5</div><div class="v" id="mRatio">—</div><div class="d">惯性矩倍数</div></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">随尺寸变化的截面特性</h2>
+    <p class="lead">曲线以当前截面作为基准（= 1.00×）。选“外径 D / 宽度 B”时壁厚 t 固定；选“壁厚 t”时外尺寸固定，用于直观比较两种调整方向的效率差异。将鼠标移到图上可读取任意尺寸处的相对值。</p>
+    <div class="panel">
+      <div class="chart-toolbar">
+        <div class="chart-tabs" role="tablist" aria-label="曲线横轴">
+          <button class="tab active" id="outerChart" type="button" role="tab" aria-selected="true">外径 D / 宽度 B</button>
+          <button class="tab" id="thickChart" type="button" role="tab" aria-selected="false">壁厚 t</button>
+        </div>
+      </div>
+      <p id="chartReadout"></p>
+      <div class="legend">
+        <span class="lg"><span class="swatch teal"></span>惯性矩 I / Iₓ</span>
+        <span class="lg"><span class="swatch wdash"></span>截面模量 W / Wₓ</span>
+        <span class="lg"><span class="swatch rose-dash"></span>单位质量 kg/m</span>
+        <span class="lg"><span class="swatch dash"></span>比刚度 I ÷ kg/m</span>
+      </div>
+      <div id="chartWrap"></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">规格对照表</h2>
+    <p class="lead">可直接编辑尺寸与备注，选择任一有效规格作为相对比较基准。非法尺寸的行会标红且不参与基准与相对值计算。</p>
+    <div class="table-tools">
+      <div class="type-tabs" role="tablist" aria-label="表格截面类型">
+        <button class="tab active" id="roundTab" type="button" role="tab" aria-selected="true">圆管预设</button>
+        <button class="tab" id="rectTab" type="button" role="tab" aria-selected="false">矩形管预设</button>
+      </div>
+      <div class="baseline-control"><label for="baselineSelect">比较基准</label><select id="baselineSelect" aria-label="选择相对值基准"></select></div>
+      <div class="table-actions">
+        <button class="btn" id="addRow" type="button">＋ 新增规格</button>
+        <button class="btn alt" id="restoreRows" type="button">恢复预设</button>
+      </div>
+    </div>
+    <div class="table-scroll">
+      <table class="cmp-table">
+        <caption>可编辑的管梁车架截面性能对照表</caption>
+        <thead id="tableHead"></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+    </div>
+    <p class="status" id="status" role="alert"></p>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">简化公式</h2>
+    <p class="lead">尺寸单位为 mm；单位质量按钢材密度 7.85 g/cm³ 换算。圆管外径 D、内径 d = D − 2t；矩形管外宽高 B、H，内宽高 b = B − 2t、h = H − 2t。</p>
+    <div class="formula-grid">
+      <div class="fbox"><span class="tag">圆管 · 截面积</span><div class="math">A = π(D² − d²) / 4</div><p class="note">d = D − 2t 为内径；合法条件 D &gt; 2t。</p></div>
+      <div class="fbox"><span class="tag">圆管 · 惯性矩与模量</span><div class="math">I = π(D⁴ − d⁴) / 64，W = 2I / D</div><p class="note">圆管各弯曲方向相同，外径 D 影响显著。</p></div>
+      <div class="fbox"><span class="tag">矩形管 · 截面积</span><div class="math">A = BH − bh</div><p class="note">b = B − 2t、h = H − 2t；合法条件 B &gt; 2t 且 H &gt; 2t。</p></div>
+      <div class="fbox"><span class="tag">矩形管 · 惯性矩与模量</span><div class="math">Iₓ = (BH³ − bh³) / 12，Wₓ = 2Iₓ / H</div><p class="note">按竖向高度 H 受弯的强轴 x-x 计算。</p></div>
+      <div class="fbox"><span class="tag">单位质量</span><div class="math">kg/m = A · 7.85 / 1000</div><p class="note">截面面积（mm²）按钢密度换算，结果单位 kg/m。</p></div>
+      <div class="fbox"><span class="tag">比刚度</span><div class="math">S = I / (kg/m)</div><p class="note">同材料同长度下比较“每公斤重量换来的抗弯效率”。</p></div>
+    </div>
+  </section>
+
+  <section class="block">
+    <h2 class="sec">工程注意事项</h2>
+    <div class="notes-grid">
+      <div class="note-item"><span class="nid">1</span><p><strong>外径优先，但受布置限制。</strong>增大外径是最有效的抗弯提升手段，还需同步检查人体工程、转向舵角、动力布置与碰撞边界。</p></div>
+      <div class="note-item"><span class="nid">2</span><p><strong>壁厚用于节点焊接与局部稳定。</strong>耳板、减震器支座、脚踏等连接区可局部加厚或加套管，不必整根管统一增厚。</p></div>
+      <div class="note-item"><span class="nid">3</span><p><strong>矩形管存在方向性。</strong>本页 Iₓ 假定 H 为竖向高度；翻转 90° 后应交换 B、H 重新比较，扭转与局部屈曲也须单独校核。</p></div>
+      <div class="note-item"><span class="nid">4</span><p><strong>截面数值不等于整架刚度。</strong>整车还受节点、三角化、焊缝、悬臂长度与载荷路径控制，应在车架级有限元中验证。</p></div>
+      <div class="note-item"><span class="nid">5</span><p><strong>警惕薄壁失稳、弯管减薄与腐蚀。</strong>壁厚过薄会带来凹陷、焊穿、热变形与腐蚀裕量不足，弯管处还会减薄；需结合管材标准与疲劳寿命定下限。</p></div>
+      <div class="note-item"><span class="nid">6</span><p><strong>定型须有限元 + 台架疲劳 + 实车验证。</strong>最终方案应通过典型工况、焊接样件、台架疲劳与实车路试验证，不能仅依据本页理想截面计算。</p></div>
+    </div>
+  </section>
+</main>
+
+<footer class="site-footer">
+  <div class="inner">本页为理想均匀钢制闭口截面的静力学早期筛选工具，忽略焊缝、开孔、弯管减薄、屈服、疲劳与局部屈曲。计算结果仅供方案比较，实际设计请结合结构仿真、材料规范与试验验证。</div>
+</footer>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ==== PURE CALC ==== */
+  var DENSITY = 7.85; // g/cm³；尺寸输入单位为 mm
+  function calcRound(D, t){
+    D = Number(D); t = Number(t);
+    if (!(t > 0) || !(D > 2 * t)){
+      return { area: NaN, kgm: NaN, inertia: NaN, modulus: NaN, specific: NaN, invalid: true };
+    }
+    var d = D - 2 * t;
+    var A = Math.PI * (D * D - d * d) / 4;
+    var I = Math.PI * (Math.pow(D, 4) - Math.pow(d, 4)) / 64;
+    var kgm = A * DENSITY / 1000;
+    return { area: A, kgm: kgm, inertia: I, modulus: 2 * I / D, specific: I / kgm, invalid: false };
+  }
+  function calcRect(B, H, t){
+    B = Number(B); H = Number(H); t = Number(t);
+    if (!(t > 0) || !(B > 2 * t) || !(H > 2 * t)){
+      return { area: NaN, kgm: NaN, inertia: NaN, modulus: NaN, specific: NaN, invalid: true };
+    }
+    var b = B - 2 * t, h = H - 2 * t;
+    var A = B * H - b * h;
+    var I = (B * Math.pow(H, 3) - b * Math.pow(h, 3)) / 12;
+    var kgm = A * DENSITY / 1000;
+    return { area: A, kgm: kgm, inertia: I, modulus: 2 * I / H, specific: I / kgm, invalid: false };
+  }
+  /* ==== END PURE CALC ==== */
+
+  var $ = function(id){ return document.getElementById(id); };
+  function fmt(n, d){
+    if (!Number.isFinite(n)) return '—';
+    var nd = (d === undefined ? 1 : d);
+    return n.toLocaleString('zh-CN', { maximumFractionDigits: nd, minimumFractionDigits: nd });
+  }
+  function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  // 交互状态（滑杆 + 图表 + 截面图）
+  var state = {
+    type: 'round',
+    round: { d: 28.6, t: 1.5 },
+    rect: { b: 40, h: 25, t: 1.5 },
+    chart: 'outer', // 'outer' | 'thick'
+    playing: false,
+    raf: 0,
+    t0: 0
+  };
+  var SERIES = [
+    { key: 'inertia',  label: '惯性矩 I / Iₓ', color: 'var(--teal)',  dash: '' },
+    { key: 'modulus',  label: '截面模量 W / Wₓ', color: 'var(--amber)', dash: '7 5' },
+    { key: 'kgm',      label: '单位质量 kg/m', color: 'var(--rose)',  dash: '3 5' },
+    { key: 'specific', label: '比刚度',         color: '#6b7d8c',     dash: '9 5' }
+  ];
+  var REF = calcRound(28.6, 1.5); // 固定参考基准：Ø28.6 × 1.5
+  var reduced = (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) || false;
+
+  function cur(){ return state.type === 'round' ? state.round : state.rect; }
+  function calcCurrent(){ var c = cur(); return state.type === 'round' ? calcRound(c.d, c.t) : calcRect(c.b, c.h, c.t); }
+
+  /* ---------- 控件同步 ---------- */
+  function updateControls(){
+    var rect = state.type === 'rect';
+    var c = cur();
+    $('roundMode').classList.toggle('active', !rect);
+    $('rectMode').classList.toggle('active', rect);
+    $('roundMode').setAttribute('aria-selected', String(!rect));
+    $('rectMode').setAttribute('aria-selected', String(rect));
+    $('outerLabel').textContent = rect ? '宽度 B' : '外径 D';
+    $('outerRange').min = '20';
+    $('outerRange').max = rect ? '60' : '50';
+    $('outerRange').value = rect ? c.b : c.d;
+    $('outerVal').textContent = fmt(rect ? c.b : c.d, 1) + ' mm';
+    $('outerScale').innerHTML = rect
+      ? '<span>20 mm</span><span>40 mm</span><span>60 mm</span>'
+      : '<span>20 mm</span><span>35 mm</span><span>50 mm</span>';
+    $('heightCtrl').hidden = !rect;
+    $('heightRange').value = state.rect.h;
+    $('heightVal').textContent = fmt(state.rect.h, 1) + ' mm';
+    $('thicknessRange').value = c.t;
+    $('thicknessVal').textContent = fmt(c.t, 1) + ' mm';
+  }
+
+  function updateMetrics(){
+    var c = calcCurrent();
+    var rect = state.type === 'rect';
+    $('mArea').textContent = fmt(c.area, 1) + ' mm²';
+    $('mKgm').textContent = fmt(c.kgm, 3) + ' kg/m';
+    $('mInertia').textContent = fmt(c.inertia, 0) + ' mm⁴';
+    $('mModulus').textContent = fmt(c.modulus, 0) + ' mm³';
+    $('mSpecific').textContent = fmt(c.specific, 0);
+    $('mRatio').textContent = fmt(c.inertia / REF.inertia, 2) + ' ×';
+    $('kInertia').textContent = rect ? '惯性矩 Iₓ' : '惯性矩 I';
+    $('kModulus').textContent = rect ? '截面模量 Wₓ' : '截面模量 W';
+    $('mInertiaD').textContent = rect ? '强轴 x-x（绕水平轴）' : '各弯曲方向相同';
+    $('mModulusD').textContent = rect ? 'σ = M / Wₓ' : 'σ = M / W';
+  }
+
+  /* ---------- 截面 SVG ---------- */
+  function drawSection(){
+    var box = $('sectionDiagram');
+    var W = Math.max(300, box.clientWidth);
+    var H = Math.round(W * 0.66);
+    var cx = W / 2, cy = H / 2;
+    var defs = '<defs><marker id="arrAmber" markerWidth="8" markerHeight="8" refX="4" refY="4" orient="auto-start-reverse"><path d="M0,0 L8,4 L0,8 z" fill="var(--amber)"/></marker></defs>';
+    var s = '';
+    if (state.type !== 'rect'){
+      var d = cur().d, t = cur().t;
+      var scale = Math.min((W - 120) / 50, (H - 84) / 50);
+      var ro = d * scale / 2;
+      var ri = (d - 2 * t) * scale / 2;
+      s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + ro + '" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="2"/>';
+      s += '<circle cx="' + cx + '" cy="' + cy + '" r="' + ri + '" fill="#fbfdfe" stroke="var(--teal)" stroke-width="1.5"/>';
+      s += '<line x1="' + (cx - ro - 32) + '" y1="' + cy + '" x2="' + (cx + ro + 32) + '" y2="' + cy + '" stroke="#6b7d8c" stroke-width="1.4" stroke-dasharray="5 4"/>';
+      s += '<text x="' + (cx - ro - 26) + '" y="' + (cy - 7) + '" font-size="12" fill="#6b7d8c" font-style="italic">x</text>';
+      s += '<text x="' + (cx + ro + 20) + '" y="' + (cy - 7) + '" font-size="12" fill="#6b7d8c" font-style="italic">x</text>';
+      var dy = cy + ro + 30;
+      s += '<line x1="' + (cx - ro) + '" y1="' + (cy + ro) + '" x2="' + (cx - ro) + '" y2="' + dy + '" stroke="var(--amber)" stroke-width="1"/>';
+      s += '<line x1="' + (cx + ro) + '" y1="' + (cy + ro) + '" x2="' + (cx + ro) + '" y2="' + dy + '" stroke="var(--amber)" stroke-width="1"/>';
+      s += '<line x1="' + (cx - ro) + '" y1="' + dy + '" x2="' + (cx + ro) + '" y2="' + dy + '" stroke="var(--amber)" stroke-width="1.2" marker-start="url(#arrAmber)" marker-end="url(#arrAmber)"/>';
+      s += '<text x="' + cx + '" y="' + (dy - 6) + '" text-anchor="middle" font-size="12" fill="var(--amber)">外径 D = ' + fmt(d, 1) + ' mm</text>';
+      var ty = cy - ri;
+      s += '<line x1="' + cx + '" y1="' + (cy - ro) + '" x2="' + cx + '" y2="' + ty + '" stroke="var(--amber)" stroke-width="1.6" marker-start="url(#arrAmber)" marker-end="url(#arrAmber)"/>';
+      s += '<text x="' + (cx + 10) + '" y="' + ((cy - ro + ty) / 2 + 4) + '" font-size="12" fill="var(--amber)">t = ' + fmt(t, 1) + ' mm</text>';
+      box.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="圆管截面示意">' + defs + s + '</svg>';
+    } else {
+      var b = cur().b, h = cur().h, t2 = cur().t;
+      var scale2 = Math.min((W - 90) / 60, (H - 84) / 55);
+      var ow = b * scale2, oh = h * scale2, iw = (b - 2 * t2) * scale2, ih = (h - 2 * t2) * scale2;
+      var x0 = cx - ow / 2, y0 = cy - oh / 2;
+      s += '<rect x="' + x0 + '" y="' + y0 + '" width="' + ow + '" height="' + oh + '" fill="var(--teal-soft)" stroke="var(--teal)" stroke-width="2"/>';
+      s += '<rect x="' + (cx - iw / 2) + '" y="' + (cy - ih / 2) + '" width="' + iw + '" height="' + ih + '" fill="#fbfdfe" stroke="var(--teal)" stroke-width="1.5"/>';
+      s += '<line x1="' + (x0 - 32) + '" y1="' + cy + '" x2="' + (x0 + ow + 32) + '" y2="' + cy + '" stroke="#6b7d8c" stroke-width="1.4" stroke-dasharray="5 4"/>';
+      s += '<text x="' + (x0 - 26) + '" y="' + (cy - 7) + '" font-size="12" fill="#6b7d8c" font-style="italic">x</text>';
+      s += '<text x="' + (x0 + ow + 20) + '" y="' + (cy - 7) + '" font-size="12" fill="#6b7d8c" font-style="italic">x</text>';
+      var by = y0 + oh + 30;
+      s += '<line x1="' + x0 + '" y1="' + (y0 + oh) + '" x2="' + x0 + '" y2="' + by + '" stroke="var(--amber)" stroke-width="1"/>';
+      s += '<line x1="' + (x0 + ow) + '" y1="' + (y0 + oh) + '" x2="' + (x0 + ow) + '" y2="' + by + '" stroke="var(--amber)" stroke-width="1"/>';
+      s += '<line x1="' + x0 + '" y1="' + by + '" x2="' + (x0 + ow) + '" y2="' + by + '" stroke="var(--amber)" stroke-width="1.2" marker-start="url(#arrAmber)" marker-end="url(#arrAmber)"/>';
+      s += '<text x="' + cx + '" y="' + (by - 6) + '" text-anchor="middle" font-size="12" fill="var(--amber)">宽度 B = ' + fmt(b, 1) + ' mm</text>';
+      var hx = x0 + ow + 26;
+      s += '<line x1="' + (x0 + ow) + '" y1="' + y0 + '" x2="' + hx + '" y2="' + y0 + '" stroke="var(--amber)" stroke-width="1"/>';
+      s += '<line x1="' + (x0 + ow) + '" y1="' + (y0 + oh) + '" x2="' + hx + '" y2="' + (y0 + oh) + '" stroke="var(--amber)" stroke-width="1"/>';
+      s += '<line x1="' + hx + '" y1="' + y0 + '" x2="' + hx + '" y2="' + (y0 + oh) + '" stroke="var(--amber)" stroke-width="1.2" marker-start="url(#arrAmber)" marker-end="url(#arrAmber)"/>';
+      s += '<text x="' + (hx + 6) + '" y="' + (cy + 4) + '" font-size="12" fill="var(--amber)">H = ' + fmt(h, 1) + ' mm</text>';
+      var tX = x0 + ow * 0.28;
+      var tTop = y0 + t2 * scale2;
+      s += '<line x1="' + tX + '" y1="' + y0 + '" x2="' + tX + '" y2="' + tTop + '" stroke="var(--amber)" stroke-width="1.6" marker-start="url(#arrAmber)" marker-end="url(#arrAmber)"/>';
+      s += '<text x="' + (tX + 8) + '" y="' + ((y0 + tTop) / 2 + 4) + '" font-size="12" fill="var(--amber)">t = ' + fmt(t2, 1) + ' mm</text>';
+      box.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="矩形管截面示意">' + defs + s + '</svg>';
+    }
+  }
+
+  /* ---------- 曲线图 ---------- */
+  function chartRange(){
+    var isOuter = state.chart === 'outer';
+    var min, max, now;
+    if (isOuter){
+      min = 20;
+      max = state.type === 'round' ? 50 : 60;
+      now = state.type === 'round' ? cur().d : cur().b;
+    } else {
+      min = 0.6;
+      max = 5;
+      now = cur().t;
+    }
+    return { isOuter: isOuter, min: min, max: max, now: now };
+  }
+  function chartSample(v){
+    var c = cur();
+    if (state.type === 'round'){
+      var D = state.chart === 'outer' ? v : c.d;
+      var t = state.chart === 'thick' ? v : c.t;
+      return calcRound(D, t);
+    }
+    var B = state.chart === 'outer' ? v : c.b;
+    var tt = state.chart === 'thick' ? v : c.t;
+    return calcRect(B, c.h, tt);
+  }
+  function niceNumber(x){
+    if (!(x > 0)) return 1;
+    var steps = [1, 2, 2.5, 5, 10];
+    var mag = Math.pow(10, Math.floor(Math.log10(x)));
+    var n = x / mag;
+    for (var i = 0; i < steps.length; i++){ if (n <= steps[i]) return steps[i] * mag; }
+    return 10 * mag;
+  }
+  function tickLabel(v){
+    var s = String(Math.round(v * 100) / 100);
+    if (s.indexOf('.') >= 0) s = s.replace(/\.?0+$/, '');
+    return s + '×';
+  }
+  var chartMeta = null;
+  function drawChart(){
+    var box = $('chartWrap');
+    var W = Math.max(300, box.clientWidth);
+    var H = Math.round(Math.max(310, Math.min(430, W * 0.62)));
+    var m = { t: 34, r: 34, b: 46, l: 58 };
+    var r = chartRange();
+    var base = calcCurrent();
+    var xf = function(v){ return m.l + (v - r.min) / (r.max - r.min) * (W - m.l - m.r); };
+    var step = (r.max - r.min) / 96;
+    var top = 0;
+    var samples = [];
+    for (var v = r.min; v <= r.max + 1e-9; v += step){
+      var q = chartSample(v);
+      if (q.invalid) continue;
+      samples.push({ v: v, q: q });
+      for (var k = 0; k < SERIES.length; k++){
+        var rr = q[SERIES[k].key] / base[SERIES[k].key];
+        if (rr > top) top = rr;
+      }
+    }
+    var tickStep = niceNumber((top * 1.15) / 4);
+    var top2 = tickStep * 4;
+    var yf = function(v){ return m.t + (1 - v / top2) * (H - m.t - m.b); };
+
+    var grid = '';
+    var gi;
+    for (gi = 0; gi <= 4; gi++){
+      var yv = tickStep * gi;
+      var y = yf(yv);
+      grid += '<line x1="' + m.l + '" y1="' + y + '" x2="' + (W - m.r) + '" y2="' + y + '" stroke="var(--grid)" stroke-width="1"/>';
+      grid += '<text x="' + (m.l - 8) + '" y="' + (y + 4) + '" text-anchor="end" font-size="11" fill="var(--muted)">' + (gi === 0 ? '0' : tickLabel(yv)) + '</text>';
+    }
+    for (gi = 0; gi <= 4; gi++){
+      var xv = r.min + (r.max - r.min) * gi / 4;
+      var x = xf(xv);
+      grid += '<line x1="' + x + '" y1="' + m.t + '" x2="' + x + '" y2="' + (H - m.b) + '" stroke="var(--grid)" stroke-width="1"/>';
+      grid += '<text x="' + x + '" y="' + (H - m.b + 18) + '" text-anchor="middle" font-size="11" fill="var(--muted)">' + xv.toFixed(r.isOuter ? 0 : 1) + '</text>';
+    }
+    if (top2 >= 1){
+      grid += '<line x1="' + m.l + '" y1="' + yf(1) + '" x2="' + (W - m.r) + '" y2="' + yf(1) + '" stroke="#c4cfd8" stroke-width="1.2" stroke-dasharray="4 4"/>';
+      grid += '<text x="' + (W - m.r - 4) + '" y="' + (yf(1) - 5) + '" text-anchor="end" font-size="10" fill="#8b9aa8">1.00×（当前截面）</text>';
+    }
+
+    var paths = '';
+    for (var si = 0; si < SERIES.length; si++){
+      var ser = SERIES[si];
+      var dstr = '';
+      for (var pi = 0; pi < samples.length; pi++){
+        var p = samples[pi];
+        var ratio = p.q[ser.key] / base[ser.key];
+        dstr += (pi ? 'L' : 'M') + xf(p.v).toFixed(2) + ',' + yf(ratio).toFixed(2);
+      }
+      paths += '<path d="' + dstr + '" fill="none" stroke="' + ser.color + '" stroke-width="2.3"' + (ser.dash ? ' stroke-dasharray="' + ser.dash + '"' : '') + '/>';
+    }
+
+    var gx = xf(r.now);
+    var guide = '<line x1="' + gx + '" y1="' + m.t + '" x2="' + gx + '" y2="' + (H - m.b) + '" stroke="#8b9aa8" stroke-width="1.2" stroke-dasharray="3 4"/>';
+    guide += '<circle cx="' + gx + '" cy="' + yf(1) + '" r="4.5" fill="#fff" stroke="var(--ink)" stroke-width="1.6"/>';
+
+    var hover = '<g class="hoverG" style="display:none">';
+    hover += '<line class="hoverLine" x1="0" y1="' + m.t + '" x2="0" y2="' + (H - m.b) + '" stroke="#5a6a78" stroke-width="1" stroke-dasharray="2 3"/>';
+    for (var hi = 0; hi < SERIES.length; hi++){
+      hover += '<circle class="hoverDot" cx="0" cy="0" r="4" fill="' + SERIES[hi].color + '" stroke="#fff" stroke-width="1.5"/>';
+    }
+    hover += '</g>';
+
+    var axis = '<text x="' + (W / 2) + '" y="' + (H - 8) + '" text-anchor="middle" font-size="12" fill="var(--muted)">' + (r.isOuter ? (state.type === 'round' ? '外径 D（mm）' : '宽度 B（mm）') : '壁厚 t（mm）') + '</text>' +
+      '<text x="16" y="' + (H / 2) + '" text-anchor="middle" font-size="12" fill="var(--muted)" transform="rotate(-90 16 ' + (H / 2) + ')">相对当前截面（×）</text>';
+
+    box.innerHTML = '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" role="img" aria-label="截面性能随尺寸变化的归一化曲线">' +
+      grid + '<rect x="' + m.l + '" y="' + m.t + '" width="' + (W - m.l - m.r) + '" height="' + (H - m.t - m.b) + '" fill="none" stroke="var(--line)" stroke-width="1"/>' +
+      paths + guide + hover + axis + '</svg>';
+
+    var svgEl = box.querySelector('svg');
+    chartMeta = {
+      box: box, W: W, H: H, m: m, min: r.min, max: r.max, isOuter: r.isOuter,
+      xf: xf, yf: yf, base: base,
+      hoverG: svgEl.querySelector('.hoverG'),
+      hoverLine: svgEl.querySelector('.hoverLine'),
+      hoverDots: svgEl.querySelectorAll('.hoverDot')
+    };
+    setDefaultReadout();
+  }
+
+  function setDefaultReadout(){
+    var c = calcCurrent();
+    var rect = state.type === 'rect';
+    var lim = rect ? 'B = ' + fmt(cur().b, 1) + ' mm · H = ' + fmt(cur().h, 1) + ' mm · t = ' + fmt(cur().t, 1) + ' mm'
+                   : 'D = ' + fmt(cur().d, 1) + ' mm · t = ' + fmt(cur().t, 1) + ' mm';
+    $('chartReadout').textContent = '当前截面（1.00× 基准）｜' + lim + ' → A ' + fmt(c.area, 1) + ' mm² · ' + fmt(c.kgm, 3) + ' kg/m · ' + (rect ? 'Iₓ' : 'I') + ' ' + fmt(c.inertia, 0) + ' mm⁴ · ' + (rect ? 'Wₓ' : 'W') + ' ' + fmt(c.modulus, 0) + ' mm³ · 比刚度 ' + fmt(c.specific, 0);
+  }
+  function updateHoverReadout(v, q){
+    if (!chartMeta) return;
+    var parts = [];
+    for (var i = 0; i < SERIES.length; i++){
+      var rr = q[SERIES[i].key] / chartMeta.base[SERIES[i].key];
+      parts.push(SERIES[i].label + ' ' + fmt(rr, 2) + '×');
+    }
+    var xlab = chartMeta.isOuter ? (state.type === 'round' ? 'D' : 'B') : 't';
+    $('chartReadout').textContent = xlab + ' = ' + fmt(v, chartMeta.isOuter ? 0 : 1) + ' mm → ' + parts.join('　·　');
+  }
+  function onChartMove(e){
+    if (!chartMeta) return;
+    var rb = chartMeta.box.getBoundingClientRect();
+    var px = e.clientX - rb.left;
+    var m = chartMeta.m;
+    var v = chartMeta.min + (px - m.l) / (chartMeta.W - m.l - m.r) * (chartMeta.max - chartMeta.min);
+    v = Math.max(chartMeta.min, Math.min(chartMeta.max, v));
+    var q = chartSample(v);
+    if (q.invalid) return;
+    var X = chartMeta.xf(v);
+    chartMeta.hoverG.style.display = '';
+    chartMeta.hoverLine.setAttribute('x1', X);
+    chartMeta.hoverLine.setAttribute('x2', X);
+    for (var i = 0; i < SERIES.length; i++){
+      var ratio = q[SERIES[i].key] / chartMeta.base[SERIES[i].key];
+      var dot = chartMeta.hoverDots[i];
+      dot.setAttribute('cx', X);
+      dot.setAttribute('cy', chartMeta.yf(ratio));
+    }
+    updateHoverReadout(v, q);
+  }
+  function onChartLeave(){
+    if (chartMeta && chartMeta.hoverG) chartMeta.hoverG.style.display = 'none';
+    setDefaultReadout();
+  }
+
+  function render(){ updateControls(); updateMetrics(); drawSection(); drawChart(); }
+
+  /* ---------- 演示动画 ---------- */
+  function setPlayBtn(){
+    var btn = $('playBtn');
+    if (reduced){
+      btn.disabled = true;
+      btn.title = '已启用系统“减少动态效果”，动画演示已禁用';
+      $('playLabel').textContent = '动画已禁用';
+      $('playIcon').textContent = '▶';
+    } else if (state.playing){
+      $('playLabel').textContent = '暂停演示';
+      $('playIcon').textContent = 'Ⅱ';
+    } else {
+      $('playLabel').textContent = '演示尺寸变化';
+      $('playIcon').textContent = '▶';
+    }
+  }
+  function stop(){
+    if (state.playing){ state.playing = false; cancelAnimationFrame(state.raf); }
+    setPlayBtn();
+  }
+  function loop(now){
+    if (!state.playing) return;
+    var el = (now - state.t0) / 1000;
+    var u = 0.5 + 0.5 * Math.sin(el * Math.PI / 2.5);
+    if (state.type === 'round'){
+      state.round.d = Math.round((20 + u * 30) * 10) / 10;
+    } else {
+      state.rect.b = Math.round((20 + u * 40) * 10) / 10;
+      state.rect.h = Math.round((15 + u * 40) * 10) / 10;
+    }
+    render();
+    state.raf = requestAnimationFrame(loop);
+  }
+
+  /* ---------- 规格表 ---------- */
+  var presetRows = [
+    { id:'r1', type:'round', d:22.2, t:1.2, note:'小型支撑 / 辅梁' },
+    { id:'r2', type:'round', d:25.4, t:1.2, note:'轻量辅梁' },
+    { id:'r3', type:'round', d:25.4, t:1.5, note:'常用辅梁' },
+    { id:'r4', type:'round', d:28.6, t:1.5, note:'基准主梁' },
+    { id:'r5', type:'round', d:31.8, t:1.5, note:'主梁升级' },
+    { id:'r6', type:'round', d:38.1, t:1.5, note:'高刚度主梁' },
+    { id:'q1', type:'rect', b:30, h:20, t:1.5, note:'小型辅梁' },
+    { id:'q2', type:'rect', b:40, h:20, t:1.5, note:'低高度纵梁' },
+    { id:'q3', type:'rect', b:40, h:25, t:1.5, note:'中等主梁' },
+    { id:'q4', type:'rect', b:50, h:25, t:1.5, note:'宽布置主梁' },
+    { id:'q5', type:'rect', b:50, h:30, t:1.5, note:'高截面主梁' },
+    { id:'q6', type:'rect', b:50, h:30, t:2.0, note:'高载荷区段' }
+  ];
+  var rows = JSON.parse(JSON.stringify(presetRows));
+  var activeType = 'round';
+  var baselineId = 'r4';
+  var serial = 1;
+  var tableBody = $('tableBody'), tableHead = $('tableHead'), baselineSel = $('baselineSelect'), statusEl = $('status');
+
+  function rowCalc(r){ return r.type === 'round' ? calcRound(r.d, r.t) : calcRect(r.b, r.h, r.t); }
+  function updateBaselineOptions(){
+    var all = rows.map(function(r){ return { row: r, c: rowCalc(r) }; });
+    var valid = all.filter(function(o){ return !o.c.invalid; });
+    if (!valid.some(function(o){ return o.row.id === baselineId; })) baselineId = valid.length ? valid[0].row.id : '';
+    baselineSel.innerHTML = valid.map(function(o){
+      var r = o.row;
+      var label = r.type === 'round' ? 'Ø' + r.d + ' × ' + r.t : r.b + ' × ' + r.h + ' × ' + r.t;
+      return '<option value="' + esc(r.id) + '">' + esc(label) + ' mm</option>';
+    }).join('');
+    baselineSel.value = baselineId;
+  }
+  function inputHtml(row, field){
+    var cls2 = rowCalc(row).invalid ? ' invalid-input' : '';
+    return '<input class="' + cls2.trim() + '" data-id="' + esc(row.id) + '" data-field="' + field + '" type="number" min="0" step="any" value="' + esc(row[field]) + '" aria-label="' + field + '">';
+  }
+  function noteHtml(row){
+    return '<input class="note-input' + (rowCalc(row).invalid ? ' invalid-input' : '') + '" data-id="' + esc(row.id) + '" data-field="note" aria-label="备注" value="' + esc(row.note || '') + '">';
+  }
+  function renderTable(){
+    updateBaselineOptions();
+    var round = activeType === 'round';
+    tableHead.innerHTML = round
+      ? '<tr><th>规格</th><th>外径 D<span class="u">mm</span></th><th>壁厚 t<span class="u">mm</span></th><th>备注 / 建议位置</th><th class="num">截面积 A<span class="u">mm²</span></th><th class="num">单位质量<span class="u">kg/m</span></th><th class="num">惯性矩 I<span class="u">mm⁴</span></th><th class="num">刚度比</th><th class="num">截面模量 W<span class="u">mm³</span></th><th class="num">承载趋势</th><th class="num">比刚度<span class="u">I ÷ kg/m</span></th><th>操作</th></tr>'
+      : '<tr><th>规格</th><th>宽 B<span class="u">mm</span></th><th>高 H<span class="u">mm</span></th><th>壁厚 t<span class="u">mm</span></th><th>备注 / 建议位置</th><th class="num">截面积 A<span class="u">mm²</span></th><th class="num">单位质量<span class="u">kg/m</span></th><th class="num">惯性矩 Iₓ<span class="u">mm⁴</span></th><th class="num">刚度比</th><th class="num">截面模量 Wₓ<span class="u">mm³</span></th><th class="num">承载趋势</th><th class="num">比刚度<span class="u">I ÷ kg/m</span></th><th>操作</th></tr>';
+    var baseObj = rows.map(function(r){ return { row: r, c: rowCalc(r) }; }).filter(function(o){ return o.row.id === baselineId && !o.c.invalid; })[0] || null;
+    var list = rows.map(function(r){ return { row: r, c: rowCalc(r) }; }).filter(function(o){ return o.row.type === activeType; });
+    tableBody.innerHTML = list.map(function(o){
+      var r = o.row, c = o.c;
+      var spec = r.type === 'round' ? 'Ø' + r.d + ' × ' + r.t : r.b + ' × ' + r.h + ' × ' + r.t;
+      var ratioI = (baseObj && !c.invalid) ? c.inertia / baseObj.c.inertia : NaN;
+      var ratioW = (baseObj && !c.invalid) ? c.modulus / baseObj.c.modulus : NaN;
+      var cells = r.type === 'round'
+        ? '<td class="type-cell">' + esc(spec) + '</td><td>' + inputHtml(r, 'd') + '</td><td>' + inputHtml(r, 't') + '</td><td>' + noteHtml(r) + '</td>'
+        : '<td class="type-cell">' + esc(spec) + '</td><td>' + inputHtml(r, 'b') + '</td><td>' + inputHtml(r, 'h') + '</td><td>' + inputHtml(r, 't') + '</td><td>' + noteHtml(r) + '</td>';
+      var nums = '<td class="num">' + fmt(c.area, 1) + '</td><td class="num">' + fmt(c.kgm, 3) + '</td><td class="num value">' + fmt(c.inertia, 0) + '</td><td class="num ratio">' + fmt(ratioI, 2) + (Number.isFinite(ratioI) ? '×' : '') + '</td><td class="num value">' + fmt(c.modulus, 0) + '</td><td class="num ratio">' + fmt(ratioW, 2) + (Number.isFinite(ratioW) ? '×' : '') + '</td><td class="num">' + fmt(c.specific, 0) + '</td>';
+      var del = '<td><button class="delete" type="button" title="删除此规格" aria-label="删除 ' + esc(spec) + '" data-delete="' + esc(r.id) + '">×</button></td>';
+      var cls = (c.invalid ? ' invalid' : '') + (r.id === baselineId ? ' baseline' : '');
+      return '<tr class="' + cls.trim() + '">' + cells + nums + del + '</tr>';
+    }).join('') || '<tr><td colspan="' + (round ? 12 : 13) + '" style="text-align:center;padding:26px;color:var(--muted)">当前类型暂无规格，请新增一行。</td></tr>';
+    statusEl.textContent = rows.some(function(r){ return rowCalc(r).invalid; }) ? '存在非法尺寸：圆管需满足 D > 2t；矩形管需满足 B、H 均大于 2t。非法行不参与基准与相对值计算。' : '';
+  }
+  function refocus(id, field){
+    var el = tableBody.querySelector('[data-id="' + id + '"][data-field="' + field + '"]');
+    if (el){
+      el.focus();
+      try { var L = el.value.length; el.setSelectionRange(L, L); } catch(e){}
+    }
+  }
+
+  /* ---------- 事件绑定 ---------- */
+  $('roundMode').addEventListener('click', function(){ stop(); state.type = 'round'; render(); });
+  $('rectMode').addEventListener('click', function(){ stop(); state.type = 'rect'; render(); });
+  $('outerRange').addEventListener('input', function(){ stop(); var c = cur(); if (state.type === 'round') c.d = +this.value; else c.b = +this.value; render(); });
+  $('heightRange').addEventListener('input', function(){ stop(); state.rect.h = +this.value; render(); });
+  $('thicknessRange').addEventListener('input', function(){ stop(); cur().t = +this.value; render(); });
+  function syncChartTabs(){
+    $('outerChart').classList.toggle('active', state.chart === 'outer');
+    $('thickChart').classList.toggle('active', state.chart === 'thick');
+    $('outerChart').setAttribute('aria-selected', String(state.chart === 'outer'));
+    $('thickChart').setAttribute('aria-selected', String(state.chart === 'thick'));
+  }
+  $('outerChart').addEventListener('click', function(){ state.chart = 'outer'; syncChartTabs(); drawChart(); });
+  $('thickChart').addEventListener('click', function(){ state.chart = 'thick'; syncChartTabs(); drawChart(); });
+  $('playBtn').addEventListener('click', function(){
+    if (reduced) return;
+    if (state.playing){ stop(); return; }
+    state.playing = true;
+    state.t0 = performance.now();
+    setPlayBtn();
+    state.raf = requestAnimationFrame(loop);
+  });
+
+  $('chartWrap').addEventListener('pointermove', onChartMove);
+  $('chartWrap').addEventListener('pointerleave', onChartLeave);
+
+  tableBody.addEventListener('input', function(e){
+    var el = e.target;
+    var id = el.dataset.id, field = el.dataset.field;
+    if (!id) return;
+    var row = rows.find(function(r){ return r.id === id; });
+    if (!row) return;
+    row[field] = field === 'note' ? el.value : Number(el.value);
+    renderTable();
+    refocus(id, field);
+  });
+  tableBody.addEventListener('click', function(e){
+    var id = e.target.dataset.delete;
+    if (!id) return;
+    rows = rows.filter(function(r){ return r.id !== id; });
+    if (baselineId === id) baselineId = '';
+    renderTable();
+  });
+  baselineSel.addEventListener('change', function(){ baselineId = baselineSel.value; renderTable(); });
+  $('addRow').addEventListener('click', function(){
+    var id = 'new' + Date.now() + '' + (serial++);
+    if (activeType === 'round') rows.push({ id: id, type:'round', d:30, t:1.5, note:'新规格' });
+    else rows.push({ id: id, type:'rect', b:40, h:25, t:1.5, note:'新规格' });
+    renderTable();
+  });
+  $('restoreRows').addEventListener('click', function(){
+    rows = JSON.parse(JSON.stringify(presetRows));
+    activeType = 'round';
+    baselineId = 'r4';
+    $('roundTab').classList.add('active');
+    $('rectTab').classList.remove('active');
+    $('roundTab').setAttribute('aria-selected', 'true');
+    $('rectTab').setAttribute('aria-selected', 'false');
+    renderTable();
+  });
+  $('roundTab').addEventListener('click', function(){
+    activeType = 'round';
+    $('roundTab').classList.add('active');
+    $('rectTab').classList.remove('active');
+    $('roundTab').setAttribute('aria-selected', 'true');
+    $('rectTab').setAttribute('aria-selected', 'false');
+    renderTable();
+  });
+  $('rectTab').addEventListener('click', function(){
+    activeType = 'rect';
+    $('rectTab').classList.add('active');
+    $('roundTab').classList.remove('active');
+    $('rectTab').setAttribute('aria-selected', 'true');
+    $('roundTab').setAttribute('aria-selected', 'false');
+    renderTable();
+  });
+
+  /* ---------- 响应式 / 动画偏好 ---------- */
+  var rzTimer = 0;
+  function scheduleRedraw(){ clearTimeout(rzTimer); rzTimer = setTimeout(function(){ drawSection(); drawChart(); }, 60); }
+  if (window.ResizeObserver){
+    var ro = new ResizeObserver(scheduleRedraw);
+    ro.observe($('sectionDiagram'));
+    ro.observe($('chartWrap'));
+  } else {
+    window.addEventListener('resize', scheduleRedraw);
+  }
+  if (window.matchMedia){
+    var mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    var onMq = function(e){ reduced = e.matches; if (reduced) stop(); else setPlayBtn(); };
+    if (mq.addEventListener) mq.addEventListener('change', onMq);
+    else if (mq.addListener) mq.addListener(onMq);
+  }
+
+  /* ---------- 初始化 ---------- */
+  syncChartTabs();
+  render();
+  renderTable();
+  setPlayBtn();
+})();
+</script>
+</body>
+</html>
